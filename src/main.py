@@ -1,12 +1,6 @@
-import os
-from pathlib import Path
 from src.config import config
 from contextlib import asynccontextmanager
 from src.controllers.session import init_db
-
-
-directory = Path(os.path.dirname(os.path.abspath(__file__)))
-config.load_env(directory / ".env")
 
 import random
 import logging
@@ -20,7 +14,8 @@ from routers import auditorium_router, building_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logging.info("Application started")
-    logging.basicConfig(level=config.AS_LOG_LEVEL, format="%(asctime)s - %(levelname)s - %(message)s")
+    logging.basicConfig(level=config.logging_level_strint_to_int(config.AS_LOG_LEVEL),
+                        format="%(asctime)s - %(levelname)s - %(message)s")
     random.seed(42)
     await init_db()
     yield
@@ -60,6 +55,7 @@ async def get_openapi_endpoint():
 
 if __name__ == "__main__":
     import uvicorn
+
     # uvicorn_logger = logging.getLogger("uvicorn")
     # uvicorn_logger.handlers[0].setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
     uvicorn.run(app, host=config.AS_HOST, port=config.AS_PORT)

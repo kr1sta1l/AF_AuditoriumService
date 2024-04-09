@@ -1,14 +1,12 @@
 import random
 import datetime
-from typing import List, Optional, Tuple, Dict, Union
+from typing import List, Optional, Tuple, Dict
 
-from src.modules.dto.buildings.building_dto import BuildingDto
 from src.modules.dto.corpus_dto import Corpus
 from .hse_client_interface import HSEClientInterface
+from src.modules.dto.buildings.building_dto import BuildingDto
 from src.modules.dto.auditoriums.auditorium_dto import AuditoriumDto
-from src.modules.dto.users.user_auditorium_dto import UserAuditoriumDto
 from src.modules.dto.auditoriums.auditorium_short_dto import AuditoriumShortDto
-from src.modules.dto.users.user_in_audotorium_dto import UserInAuditoriumDto
 
 from src.mock_functions.hse_client_generator import HSEClientGenerator
 
