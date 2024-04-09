@@ -9,5 +9,4 @@ class BuildingDto(BaseDto):
     first_lesson_start: str
     last_lesson_end: str
     lesson_length_minutes: int
-    # corpus_list: dict[int, str]
     corpus_list: list[Corpus]
