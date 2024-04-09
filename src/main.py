@@ -9,6 +9,8 @@ from starlette.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auditorium_router, building_router
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from src.jobber.delete_users_associations import start_jobber
 
 
 @asynccontextmanager
@@ -18,7 +20,14 @@ async def lifespan(app: FastAPI):
                         format="%(asctime)s - %(levelname)s - %(message)s")
     random.seed(42)
     await init_db()
+
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(start_jobber, 'interval', seconds=10)
+    scheduler.start()
+
     yield
+
+    scheduler.shutdown()
     logging.info("Application stopped")
 
 
