@@ -9,7 +9,6 @@ from src.modules.dao.user_dao import UserDao
 from src.hse_api_client import hse_api_client
 from pydantic.alias_generators import to_camel
 from src.controllers.session import get_user_repository
-from src.api_adapter.user_service import UserServiceClient
 from src.modules.dto.buildings.building_dto import BuildingDto
 from src.repository.generic_repository import GenericRepository
 from src.modules.dto.auditoriums.auditorium_dto import AuditoriumDto
@@ -100,9 +99,6 @@ async def get_user_auditorium(user_id: int = Header(alias=to_camel("user_id")),
                               language_code: str = Query("ru", description="Language code",
                                                          alias=to_camel("language_code")),  # ) -> str:  # ,
                               user_repository: GenericRepository = Depends(get_user_repository)) -> UserAuditoriumDto:
-    if not await UserServiceClient.is_user_exits(user_id):
-        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
-
     user_dao: Optional[UserDao] = await user_repository.get_one_by_whereclause(UserDao.user_id == user_id)
     if user_dao is None:
         raise HTTPException(status_code=404, detail=f"User {user_id} not found")
@@ -205,8 +201,6 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
                                  user_repository: GenericRepository = Depends(
                                      get_user_repository)) -> UserAuditoriumDto:
     logging.info(f"{user_short_dto}, {user_id}, {end_of_location}")
-    if not await UserServiceClient.is_user_exits(user_id):
-        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
 
     end_of_location_dt: Optional[datetime.datetime] = None
     if end_of_location is not None:
@@ -253,9 +247,7 @@ async def remove_user_from_auditorium(user_id: int = Header(alias=to_camel("user
                                       user_repository: GenericRepository = Depends(get_user_repository)
                                       ) -> Any:
     logging.info(user_id)
-    if not await UserServiceClient.is_user_exits(user_id):
-        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
-    
+
     user_dao: Optional[UserDao] = await user_repository.get_first_by_column(UserDao.user_id, user_id)
     if user_dao is None:
         aud_user_response: AuditoriumUserErrorResponse = AuditoriumUserErrorResponse(message="User not in auditorium",
