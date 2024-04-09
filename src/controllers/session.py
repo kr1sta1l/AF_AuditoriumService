@@ -20,6 +20,12 @@ def get_user_repository():
     return GenericRepo[UserDao](UserDao, __engine)
 
 
+@lru_cache
+def get_rabbit_url(username: str, password: str, host: str, port: int, virtual_host: str):
+    return f"amqp://{username}:{password}@{host}:{port}/{virtual_host}"
+
+
+
 async def init_db():
     async with __engine.begin() as conn:
         await conn.run_sync(BaseDao.metadata.drop_all)

@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class PydanticConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_file=Path(os.path.dirname(os.path.realpath(__file__))) / '.env',
+    model_config = SettingsConfigDict(env_file=Path(os.path.dirname(os.path.realpath(__file__))) / '.env2',
                                       env_file_encoding='utf-8')
 
     AS_HOST: Optional[AnyStr] = Field(None, env="AS_HOST")
@@ -31,6 +31,9 @@ class PydanticConfig(BaseSettings):
     LISTEN_QUEUE: Optional[AnyStr] = Field("profile-delete-aud-queue", env="LISTEN_QUEUE")
     SEND_QUEUE: Optional[AnyStr] = Field("auditorium-update-queue", env="SEND_QUEUE")
     EXCHANGE: Optional[AnyStr] = Field("", env="EXCHANGE")
+    RB_USERNAME: Optional[AnyStr] = Field("guest", env="RB_USERNAME")
+    RB_PASSWORD: Optional[AnyStr] = Field("guest", env="RB_PASSWORD")
+    RB_VIRTUAL_HOST: Optional[AnyStr] = Field("/", env="RB_VIRTUAL_HOST")
 
     @staticmethod
     def logging_level_strint_to_int(level: str) -> int:
