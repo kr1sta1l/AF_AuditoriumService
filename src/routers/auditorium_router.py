@@ -21,6 +21,7 @@ from src.modules.dto.auditoriums.auditorium_short_dto import AuditoriumShortDto
 from src.modules.dto.auditoriums.auditorium_users_dto import AuditoriumUsersDto
 from src.modules.dto.buildings.building_auditoriums_dto import BuildingAuditoriumsDto
 from src.modules.dto.users.user_auditorium_short_request_dto import UserAuditoriumShortRequestDto
+from src.utils.add_user_to_auditorium_notificator import send_notification_about_user_in_auditorium
 from src.utils.auditorium_route_utils import get_auditoriums_with_users, get_auditorium_with_users
 from src.modules.dto.users.user_auditorium_delete_response_dto import UserAuditoriumDeleteResponseDto
 from src.modules.dto.responses.auditorium_user_error_response import AuditoriumUserErrorResponse
@@ -224,6 +225,11 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
         user_dao.silent_status = user_short_dto.silent_status
         user_dao.end_of_location = end_of_location_dt
         await user_repository.update(user_dao)
+
+    try:
+        await send_notification_about_user_in_auditorium(user_dao, auditorium)
+    except Exception as e:
+        logging.error(f"Error while sending notification about user in auditorium: {e}")
 
     try:
         user_dto: UserAuditoriumDto = UserAuditoriumDto(user_id=user_dao.user_id, auditorium=auditorium,
