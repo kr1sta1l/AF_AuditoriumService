@@ -1,50 +1,30 @@
-# from os import getenv
 import os
 import logging
 from pathlib import Path
-from dotenv import load_dotenv
+from pydantic import Field
 from typing import Optional, AnyStr
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class PydanticConfig(BaseSettings):
-    ...
-    AS_HOST: Optional[AnyStr] = None
-    AS_PORT: Optional[int] = None
-    AS_LOG_LEVEL: Optional[int] = None
-    AS_LOG_FILE: Optional[AnyStr] = None
+    model_config = SettingsConfigDict(env_file=Path(os.path.dirname(os.path.realpath(__file__))) / '.env',
+                                      env_file_encoding='utf-8')
 
-    PE_DB_DIALECT: Optional[AnyStr] = None
-    PE_DB_USERNAME: Optional[AnyStr] = None
-    PE_DB_PASSWORD: Optional[AnyStr] = None
-    PE_DB_HOST: Optional[AnyStr] = None
-    PE_DB_PORT: Optional[int] = None
-    PE_DB_DATABASE: Optional[AnyStr] = None
-    PE_DB_ECHO: Optional[bool] = None
-    PE_DB_DEFAULT_DATABASE: Optional[AnyStr] = None
+    AS_HOST: Optional[AnyStr] = Field(None, env="AS_HOST")
+    AS_PORT: Optional[int] = Field(None, env="AS_PORT")
+    AS_LOG_LEVEL: Optional[AnyStr] = Field(None, env="AS_LOG_LEVEL")
+    AS_LOG_FILE: Optional[AnyStr] = Field(None, env="AS_LOG_FILE")
 
-
-class Config:
-    def __init__(self, path):
-        self.AS_HOST: Optional[AnyStr] = None
-        self.AS_PORT: Optional[int] = None
-        self.AS_LOG_LEVEL: Optional[int] = None
-        self.AS_LOG_FILE: Optional[AnyStr] = None
-
-        self.PE_DB_DIALECT: Optional[AnyStr] = None
-        self.PE_DB_NOT_ASYNC_DIALECT: Optional[AnyStr] = None
-        self.PE_DB_USERNAME: Optional[AnyStr] = None
-        self.PE_DB_PASSWORD: Optional[AnyStr] = None
-        self.PE_DB_HOST: Optional[AnyStr] = None
-        self.PE_DB_PORT: Optional[int] = None
-        self.PE_DB_DATABASE: Optional[AnyStr] = None
-        self.PE_DB_ECHO: Optional[bool] = None
-        self.load_env(path)
-
-    def load_env(self, path: str):
-        load_dotenv(path)
-        self.load_as_settings()
-        self.load_as_db()
+    PE_DB_DIALECT: Optional[AnyStr] = Field(None, env="PE_DB_DIALECT")
+    PE_DB_NOT_ASYNC_DIALECT: Optional[AnyStr] = Field(None, env="PE_DB_NOT_ASYNC_DIALECT")
+    PE_DB_USERNAME: Optional[AnyStr] = Field(None, env="PE_DB_USERNAME")
+    PE_DB_PASSWORD: Optional[AnyStr] = Field(None, env="PE_DB_PASSWORD")
+    PE_DB_HOST: Optional[AnyStr] = Field(None, env="PE_DB_HOST")
+    PE_DB_PORT: Optional[int] = Field(None, env="PE_DB_PORT")
+    PE_DB_DATABASE: Optional[AnyStr] = Field(None, env="PE_DB_DATABASE")
+    PE_DB_ECHO: Optional[bool] = Field(None, env="PE_DB_ECHO")
+    USER_SERVICE_HOST: Optional[AnyStr] = Field(None, env="USER_SERVICE_HOST")
+    USER_SERVICE_PORT: Optional[int] = Field(None, env="USER_SERVICE_PORT")
 
     @staticmethod
     def logging_level_strint_to_int(level: str) -> int:
@@ -63,23 +43,6 @@ class Config:
             level = "INFO"
         return string_to_level[level]
 
-    def load_as_settings(self):
-        self.AS_HOST = os.getenv("AS_HOST")
-        self.AS_PORT = int(os.getenv("AS_PORT"))
-        self.AS_LOG_LEVEL = self.logging_level_strint_to_int(os.getenv("AS_LOG_LEVEL"))
-        self.AS_LOG_FILE = os.getenv("AS_LOG_FILE")
-
-    def load_as_db(self):
-        self.PE_DB_DIALECT = os.getenv("PE_DB_DIALECT")
-        self.PE_DB_NOT_ASYNC_DIALECT = os.getenv("PE_DB_NOT_ASYNC_DIALECT")
-        self.PE_DB_USERNAME = os.getenv("PE_DB_USERNAME")
-        self.PE_DB_PASSWORD = os.getenv("PE_DB_PASSWORD")
-        self.PE_DB_HOST = os.getenv("PE_DB_HOST")
-        self.PE_DB_PORT = int(os.getenv("PE_DB_PORT"))
-        self.PE_DB_DATABASE = os.getenv("PE_DB_DATABASE")
-        self.PE_DB_ECHO = os.getenv("PE_DB_ECHO").lower()
-        self.PE_DB_ECHO = (self.PE_DB_ECHO == "true" or self.PE_DB_ECHO == "1")
-
 
 directory = Path(os.path.dirname(os.path.abspath(__file__)))
-config = Config(str(directory / ".env"))
+config = PydanticConfig()
