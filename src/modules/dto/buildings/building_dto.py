@@ -1,11 +1,8 @@
-from src.modules.dto.base_dto import BaseDto
 from src.modules.dto.corpus_dto import Corpus
+from src.modules.dto.buildings.building_short_dto import BuildingShortDto
 
 
-class BuildingDto(BaseDto):
-    id: int
-    city: str
-    address: str
+class BuildingDto(BuildingShortDto):
     first_lesson_start: str
     last_lesson_end: str
     lesson_length_minutes: int

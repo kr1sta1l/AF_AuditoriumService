@@ -26,6 +26,12 @@ class PydanticConfig(BaseSettings):
     USER_SERVICE_HOST: Optional[AnyStr] = Field(None, env="USER_SERVICE_HOST")
     USER_SERVICE_PORT: Optional[int] = Field(None, env="USER_SERVICE_PORT")
 
+    RB_CONNECTION_HOST: Optional[AnyStr] = Field("localhost", env="RB_CONNECTION_HOST")
+    RB_CONNECTION_PORT: Optional[int] = Field(5672, env="RB_CONNECTION_PORT")
+    LISTEN_QUEUE: Optional[AnyStr] = Field("profile-delete-aud-queue", env="LISTEN_QUEUE")
+    SEND_QUEUE: Optional[AnyStr] = Field("auditorium-update-queue", env="SEND_QUEUE")
+    EXCHANGE: Optional[AnyStr] = Field("", env="EXCHANGE")
+
     @staticmethod
     def logging_level_strint_to_int(level: str) -> int:
         level = level.upper()
