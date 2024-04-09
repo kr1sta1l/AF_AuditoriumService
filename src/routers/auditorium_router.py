@@ -100,9 +100,13 @@ async def get_user_auditorium(user_id: int = Header(alias=to_camel("user_id")),
                               language_code: str = Query("ru", description="Language code",
                                                          alias=to_camel("language_code")),  # ) -> str:  # ,
                               user_repository: GenericRepository = Depends(get_user_repository)) -> UserAuditoriumDto:
+    if not await UserServiceClient.is_user_exits(user_id):
+        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+
     user_dao: Optional[UserDao] = await user_repository.get_one_by_whereclause(UserDao.user_id == user_id)
     if user_dao is None:
         raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+
     if user_dao.auditorium_id is None:
         raise HTTPException(status_code=409, detail=f"User {user_id} not in any auditorium")
 
@@ -249,6 +253,9 @@ async def remove_user_from_auditorium(user_id: int = Header(alias=to_camel("user
                                       user_repository: GenericRepository = Depends(get_user_repository)
                                       ) -> Any:
     logging.info(user_id)
+    if not await UserServiceClient.is_user_exits(user_id):
+        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+    
     user_dao: Optional[UserDao] = await user_repository.get_first_by_column(UserDao.user_id, user_id)
     if user_dao is None:
         aud_user_response: AuditoriumUserErrorResponse = AuditoriumUserErrorResponse(message="User not in auditorium",
