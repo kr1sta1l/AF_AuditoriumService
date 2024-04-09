@@ -1,18 +1,15 @@
 import logging
 import datetime
 
-from typing import Optional, Tuple, List, Any, Sequence
 from fastapi.responses import JSONResponse
+from typing import Optional, Tuple, List, Any, Sequence
 from fastapi import APIRouter, Query, Header, HTTPException, Depends
 
-from src.hse_api_client import hse_api_client
-from src.modules.dto.auditoriums.auditorium_short_dto import AuditoriumShortDto
-
-from src.utils.auditorium_route_utils import get_auditoriums_with_users, get_auditorium_with_users
-
 from src.modules.dao.user_dao import UserDao
+from src.hse_api_client import hse_api_client
 from pydantic.alias_generators import to_camel
 from src.controllers.session import get_user_repository
+from src.api_adapter.user_service import UserServiceClient
 from src.modules.dto.buildings.building_dto import BuildingDto
 from src.repository.generic_repository import GenericRepository
 from src.modules.dto.auditoriums.auditorium_dto import AuditoriumDto
@@ -20,9 +17,11 @@ from src.modules.dto.responses.default_response import DefaultResponse
 from src.modules.dto.users.user_auditorium_dto import UserAuditoriumDto
 from src.modules.dto.users.user_in_audotorium_dto import UserInAuditoriumDto
 from src.modules.dto.users.users_in_auditorium_dto import UsersInAuditoriumDto
+from src.modules.dto.auditoriums.auditorium_short_dto import AuditoriumShortDto
 from src.modules.dto.auditoriums.auditorium_users_dto import AuditoriumUsersDto
 from src.modules.dto.buildings.building_auditoriums_dto import BuildingAuditoriumsDto
 from src.modules.dto.users.user_auditorium_short_request_dto import UserAuditoriumShortRequestDto
+from src.utils.auditorium_route_utils import get_auditoriums_with_users, get_auditorium_with_users
 from src.modules.dto.users.user_auditorium_delete_response_dto import UserAuditoriumDeleteResponseDto
 from src.modules.dto.responses.auditorium_user_error_response import AuditoriumUserErrorResponse
 from src.modules.dto.auditoriums.auditorium_short_users_dto import AuditoriumShortUsersDto
@@ -182,6 +181,8 @@ async def get_auditorium_users(auditorium_id: int, page: int = Query(ge=0, defau
 
 
 @router.post("/users/add_user", responses={200: {"description": "OK", "model": UserAuditoriumDto},
+                                           400: {"description": "EndOfLocation must be not in the past",
+                                                 "model": DefaultResponse},
                                            404: {"description": "User/Classroom not found",
                                                  "model": AuditoriumUserErrorResponse}},
              description="Add user to auditorium.",
@@ -199,6 +200,13 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
                                  user_repository: GenericRepository = Depends(
                                      get_user_repository)) -> UserAuditoriumDto:
     logging.info(f"{user_short_dto}, {user_id}, {end_of_location}")
+    if not await UserServiceClient.is_user_exits(user_id):
+        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+
+    end_of_location_dt: Optional[datetime.datetime] = None
+    if end_of_location is not None:
+        datetime_format = "%Y-%m-%d-%H-%M"
+        end_of_location_dt = datetime.datetime.strptime(end_of_location, datetime_format)
 
     auditorium: Optional[AuditoriumDto] = await hse_api_client.get_auditorium_by_id(user_short_dto.auditorium_id,
                                                                                     language=language_code)
@@ -209,17 +217,20 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
     user_dao: Optional[UserDao] = await user_repository.get_first_by_column(UserDao.user_id, user_id)
     if user_dao is None:
         user_dao = UserDao(user_id=user_id, auditorium_id=user_short_dto.auditorium_id,
-                           silent_status=user_short_dto.silent_status, end_of_location=end_of_location)
+                           silent_status=user_short_dto.silent_status, end_of_location=end_of_location_dt)
         await user_repository.add(user_dao)
     else:
         user_dao.auditorium_id = user_short_dto.auditorium_id
         user_dao.silent_status = user_short_dto.silent_status
-        user_dao.end_of_location = end_of_location
+        user_dao.end_of_location = end_of_location_dt
         await user_repository.update(user_dao)
 
-    user_dto: UserAuditoriumDto = UserAuditoriumDto(user_id=user_dao.user_id, auditorium=auditorium,
-                                                    silent_status=user_dao.silent_status,
-                                                    end=user_dao.end_of_location)
+    try:
+        user_dto: UserAuditoriumDto = UserAuditoriumDto(user_id=user_dao.user_id, auditorium=auditorium,
+                                                        silent_status=user_dao.silent_status,
+                                                        end=end_of_location)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=f"User {user_id} not found")
     return user_dto
 
 
