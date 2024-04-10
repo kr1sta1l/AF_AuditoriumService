@@ -38,7 +38,7 @@ router = APIRouter()
             summary="Get list of free auditoriums in building",
             responses={200: {"description": "OK", "model": BuildingAuditoriumsDto},
                        404: {"description": "Building not found", "model": ShortDefaultResponse},
-                       409: {"description": "Incorrect interval", "model": ShortDefaultResponse}},
+                       400: {"description": "Incorrect interval", "model": ShortDefaultResponse}},
             response_model=BuildingAuditoriumsDto)
 async def get_building_auditoriums(building_id: int,
                                    noise_users_presence: bool = Query(True,
@@ -69,7 +69,7 @@ async def get_building_auditoriums(building_id: int,
     interval_end_dt = datetime.datetime.strptime(interval_end, datetime_format)
 
     if interval_start_dt >= interval_end_dt:
-        raise HTTPException(status_code=409, detail="Incorrect interval")
+        raise HTTPException(status_code=400, detail="Incorrect interval")
 
     building: BuildingDto = await hse_api_client.get_building_by_id(building_id, language=language_code)
     if building is None:
@@ -207,8 +207,8 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
     if end_of_location is not None:
         datetime_format = "%Y-%m-%d-%H-%M"
         end_of_location_dt = datetime.datetime.strptime(end_of_location, datetime_format)
-    if end_of_location_dt < datetime.datetime.now():
-        raise HTTPException(status_code=400, detail="EndOfLocation must be not in the past")
+        if end_of_location_dt < datetime.datetime.now():
+            raise HTTPException(status_code=400, detail="EndOfLocation must be not in the past")
 
     auditorium: Optional[AuditoriumDto] = await hse_api_client.get_auditorium_by_id(user_short_dto.auditorium_id,
                                                                                     language=language_code)
