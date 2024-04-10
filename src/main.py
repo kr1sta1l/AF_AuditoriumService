@@ -5,12 +5,12 @@ from src.controllers.session import init_db
 import random
 import logging
 from fastapi import FastAPI
-from starlette.responses import JSONResponse
-from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auditorium_router, building_router
+from src.exceptions.exceptions import exception_handler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from src.jobber.delete_users_associations import start_jobber
+from routers import auditorium_router, building_router, technical_router
+from src.routers.health_checks_routes import readiness_router, liveness_router
 
 
 @asynccontextmanager
@@ -31,39 +31,35 @@ async def lifespan(app: FastAPI):
     logging.info("Application stopped")
 
 
-app: FastAPI = FastAPI(title="Auditorium service", lifespan=lifespan)
-app.include_router(auditorium_router.router, prefix="/auditorium", tags=["Auditorium"])
-app.include_router(building_router.router, prefix="/buildings", tags=["Building"])
+def configure_app(app: FastAPI):
+    app.include_router(auditorium_router.router, prefix="/auditorium", tags=["Auditorium"])
+    app.include_router(building_router.router, prefix="/buildings", tags=["Building"])
+    app.include_router(technical_router.router, tags=["Technical"])
+    app.include_router(readiness_router, prefix="/health")
+    app.include_router(liveness_router, prefix="/health")
 
-origins = [
-    "*"
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    app.exception_handler(400)(exception_handler)
+    app.exception_handler(404)(exception_handler)
+    app.exception_handler(409)(exception_handler)
+    app.exception_handler(503)(exception_handler)
 
-
-@app.exception_handler(400)
-async def validation_exception_handler(request, exc):
-    return JSONResponse(status_code=400, content={"message": exc.detail})
-
-
-@app.exception_handler(404)
-async def validation_exception_handler(request, exc):
-    return JSONResponse(status_code=404, content={"message": exc.detail})
-
-
-@app.get("/openapi.json", include_in_schema=False)
-async def get_openapi_endpoint():
-    return JSONResponse(content=get_openapi(title="docs", version="0.1.0", routes=app.routes))
+    origins = [
+        "*"
+    ]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 if __name__ == "__main__":
     import uvicorn
+
+    app: FastAPI = FastAPI(title="Auditorium service", lifespan=lifespan)
+    configure_app(app)
 
     # uvicorn_logger = logging.getLogger("uvicorn")
     # uvicorn_logger.handlers[0].setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))

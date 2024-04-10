@@ -17,6 +17,10 @@ if not database_exists(__not_async_engine.url):
 __engine = create_async_engine(__db_settings["database_url"], echo=__db_settings["echo"])
 
 
+def get_engine():
+    return __engine
+
+
 @lru_cache
 def get_user_repository():
     return GenericRepo[UserDao](UserDao, __engine)
