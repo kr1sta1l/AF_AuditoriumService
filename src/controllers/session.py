@@ -11,8 +11,8 @@ from src.repository.generic_repository import GenericRepository as GenericRepo
 __db_settings = get_db_settings()
 __not_async_engine = create_engine(__db_settings["not_async_url"], echo=__db_settings["echo"])
 if not database_exists(__not_async_engine.url):
-    logging.error("Database does not exist. Creating...")
-    create_database(__not_async_engine.url, )
+    logging.info("Database does not exist. Creating...")
+    create_database(__not_async_engine.url)
 
 __engine = create_async_engine(__db_settings["database_url"], echo=__db_settings["echo"])
 
@@ -28,7 +28,6 @@ def get_rabbit_url(username: str, password: str, host: str, port: int, virtual_h
 
 
 async def init_db():
-    if not database_exists(__not_async_engine.url):
-        async with __engine.begin() as conn:
-            await conn.run_sync(BaseDao.metadata.drop_all)
-            await conn.run_sync(BaseDao.metadata.create_all)
+    async with __engine.begin() as conn:
+        # await conn.run_sync(BaseDao.metadata.drop_all)
+        await conn.run_sync(BaseDao.metadata.create_all)
