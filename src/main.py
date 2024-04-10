@@ -5,11 +5,14 @@ from src.controllers.session import init_db
 import random
 import logging
 from fastapi import FastAPI
+from starlette.responses import JSONResponse
+from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from src.exceptions.exceptions import exception_handler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from src.jobber.delete_users_associations import start_jobber
 from routers import auditorium_router, building_router, technical_router
+from src.routers.health_checks_routes import readiness_router, liveness_router
 
 
 @asynccontextmanager
@@ -34,6 +37,8 @@ def configure_app(app: FastAPI):
     app.include_router(auditorium_router.router, prefix="/auditorium", tags=["Auditorium"])
     app.include_router(building_router.router, prefix="/buildings", tags=["Building"])
     app.include_router(technical_router.router, tags=["Technical"])
+    app.include_router(readiness_router, prefix="/health")
+    app.include_router(liveness_router, prefix="/health")
 
     app.exception_handler(400)(exception_handler)
     app.exception_handler(404)(exception_handler)
