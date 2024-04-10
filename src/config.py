@@ -7,8 +7,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class PydanticConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_file=Path(os.path.dirname(os.path.realpath(__file__))) / '.env',
-                                      env_file_encoding='utf-8')
+    # model_config = SettingsConfigDict(env_file=Path(os.path.dirname(os.path.realpath(__file__))) / '.env',
+    #                                   env_file_encoding='utf-8')
 
     AS_HOST: Optional[AnyStr] = Field("0.0.0.0", env="AS_HOST")
     AS_PORT: Optional[int] = Field("8000", env="AS_PORT")
@@ -51,5 +51,4 @@ class PydanticConfig(BaseSettings):
         return string_to_level[level]
 
 
-directory = Path(os.path.dirname(os.path.abspath(__file__)))
 config = PydanticConfig()
