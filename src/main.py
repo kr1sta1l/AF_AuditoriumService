@@ -5,8 +5,6 @@ from src.controllers.session import init_db
 import random
 import logging
 from fastapi import FastAPI
-from starlette.responses import JSONResponse
-from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from src.exceptions.exceptions import exception_handler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
