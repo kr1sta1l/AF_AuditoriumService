@@ -18,6 +18,7 @@ from src.modules.dto.users.user_in_audotorium_dto import UserInAuditoriumDto
 from src.modules.dto.users.users_in_auditorium_dto import UsersInAuditoriumDto
 from src.modules.dto.auditoriums.auditorium_short_dto import AuditoriumShortDto
 from src.modules.dto.auditoriums.auditorium_users_dto import AuditoriumUsersDto
+from src.modules.dto.responses.short_default_response import ShortDefaultResponse
 from src.modules.dto.buildings.building_auditoriums_dto import BuildingAuditoriumsDto
 from src.modules.dto.users.user_auditorium_short_request_dto import UserAuditoriumShortRequestDto
 from src.utils.add_user_to_auditorium_notificator import send_notification_about_user_in_auditorium
@@ -36,8 +37,8 @@ router = APIRouter()
                         "auditoriums_amount - amount of auditoriums in building",
             summary="Get list of free auditoriums in building",
             responses={200: {"description": "OK", "model": BuildingAuditoriumsDto},
-                       404: {"description": "Building not found", "model": DefaultResponse},
-                       409: {"description": "Incorrect interval", "model": DefaultResponse}},
+                       404: {"description": "Building not found", "model": ShortDefaultResponse},
+                       409: {"description": "Incorrect interval", "model": ShortDefaultResponse}},
             response_model=BuildingAuditoriumsDto)
 async def get_building_auditoriums(building_id: int,
                                    noise_users_presence: bool = Query(True,
@@ -92,8 +93,8 @@ async def get_building_auditoriums(building_id: int,
 
 
 @router.get("/user", responses={200: {"description": "OK", "model": UserAuditoriumDto},
-                                404: {"description": "User not found", "model": DefaultResponse},
-                                409: {"description": "User not in any auditorium", "model": DefaultResponse}},
+                                404: {"description": "User not found", "model": ShortDefaultResponse},
+                                409: {"description": "User not in any auditorium", "model": ShortDefaultResponse}},
             description="Get auditorium where user located in", summary="Get auditorium where user located in")
 async def get_user_auditorium(user_id: int = Header(alias=to_camel("user_id")),
                               language_code: str = Query("ru", description="Language code",
@@ -119,7 +120,7 @@ async def get_user_auditorium(user_id: int = Header(alias=to_camel("user_id")),
 
 @router.get("/info/{auditorium_id}", description="Get auditorium by id", summary="Get auditorium by id",
             responses={200: {"description": "OK", "model": AuditoriumUsersDto},
-                       404: {"description": "Auditorium not found", "model": DefaultResponse}})
+                       404: {"description": "Auditorium not found", "model": ShortDefaultResponse}})
 async def get_auditorium_by_id(auditorium_id: int,
                                language_code: str = Query("ru", description="Language code",
                                                           alias=to_camel("language_code"))) -> AuditoriumUsersDto:
@@ -139,7 +140,7 @@ async def get_auditorium_by_id(auditorium_id: int,
                         "entities_amount - amount of entities in response",
             summary="Get list of users in auditorium",
             responses={200: {"description": "OK", "model": UsersInAuditoriumDto},
-                       404: {"description": "Auditorium not found", "model": DefaultResponse}})
+                       404: {"description": "Auditorium not found", "model": ShortDefaultResponse}})
 async def get_auditorium_users(auditorium_id: int, page: int = Query(ge=0, default=0, alias=to_camel("page")),
                                size: int = Query(ge=1, le=100, default=50, alias=to_camel("size")),
                                language_code: str = Query("ru", description="Language code",
@@ -183,9 +184,9 @@ async def get_auditorium_users(auditorium_id: int, page: int = Query(ge=0, defau
 
 @router.post("/users/add_user", responses={200: {"description": "OK", "model": UserAuditoriumDto},
                                            400: {"description": "EndOfLocation must be not in the past",
-                                                 "model": DefaultResponse},
-                                           404: {"description": "User/Classroom not found",
-                                                 "model": AuditoriumUserErrorResponse}},
+                                                 "model": ShortDefaultResponse},
+                                           404: {"description": "Auditorium not found",
+                                                 "model": ShortDefaultResponse}},
              description="Add user to auditorium.",
              summary="Add user to auditorium")
 async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
@@ -206,6 +207,8 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
     if end_of_location is not None:
         datetime_format = "%Y-%m-%d-%H-%M"
         end_of_location_dt = datetime.datetime.strptime(end_of_location, datetime_format)
+    if end_of_location_dt < datetime.datetime.now():
+        raise HTTPException(status_code=400, detail="EndOfLocation must be not in the past")
 
     auditorium: Optional[AuditoriumDto] = await hse_api_client.get_auditorium_by_id(user_short_dto.auditorium_id,
                                                                                     language=language_code)
@@ -229,12 +232,9 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
     except Exception as e:
         logging.error(f"Error while sending notification about user in auditorium: {e}")
 
-    try:
-        user_dto: UserAuditoriumDto = UserAuditoriumDto(user_id=user_dao.user_id, auditorium=auditorium,
-                                                        silent_status=user_dao.silent_status,
-                                                        end=end_of_location)
-    except ValueError as e:
-        raise HTTPException(status_code=409, detail=f"User {user_id} not found")
+    user_dto: UserAuditoriumDto = UserAuditoriumDto(user_id=user_dao.user_id, auditorium=auditorium,
+                                                    silent_status=user_dao.silent_status,
+                                                    end=end_of_location)
     return user_dto
 
 
