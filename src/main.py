@@ -8,9 +8,9 @@ from fastapi import FastAPI
 from starlette.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auditorium_router, building_router
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from src.jobber.delete_users_associations import start_jobber
+from routers import auditorium_router, building_router, technical_router
 
 
 @asynccontextmanager
@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
 app: FastAPI = FastAPI(title="Auditorium service", lifespan=lifespan)
 app.include_router(auditorium_router.router, prefix="/auditorium", tags=["Auditorium"])
 app.include_router(building_router.router, prefix="/buildings", tags=["Building"])
+app.include_router(technical_router.router, tags=["Technical"])
 
 origins = [
     "*"
@@ -55,6 +56,11 @@ async def validation_exception_handler(request, exc):
 @app.exception_handler(404)
 async def validation_exception_handler(request, exc):
     return JSONResponse(status_code=404, content={"message": exc.detail})
+
+
+@app.exception_handler(503)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(status_code=503, content={"message": exc.detail})
 
 
 @app.get("/openapi.json", include_in_schema=False)
