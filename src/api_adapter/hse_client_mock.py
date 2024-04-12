@@ -174,4 +174,4 @@ class HSEClientMock(HSEClientInterface):
                                   type=auditorium.type, corpus=auditorium.corpus)
 
     async def get_auditorium_by_id(self, auditorium_id: int, language="ru") -> Optional[AuditoriumDto]:
-        return await self._get_auditorium_by_id_from_generator(auditorium_id)
+        return await self._get_auditorium_by_id_from_generator(auditorium_id, language=language)
