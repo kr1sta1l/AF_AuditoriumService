@@ -7,6 +7,7 @@ COPY src/ /app/src/
 WORKDIR /app
 
 ENV PYTHONPATH=/app
+EXPOSE 8080
 
 # ! add requirements.txt to thif directory because COPY can't copy files from parent directory
 RUN pip install --no-cache-dir -r src/requirements.txt

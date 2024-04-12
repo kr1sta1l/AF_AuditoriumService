@@ -11,7 +11,7 @@ class PydanticConfig(BaseSettings):
     #                                   env_file_encoding='utf-8')
 
     AS_HOST: Optional[AnyStr] = Field("0.0.0.0", env="AS_HOST")
-    AS_PORT: Optional[int] = Field("8000", env="AS_PORT")
+    AS_PORT: Optional[int] = Field(8080, env="AS_PORT")
     AS_LOG_LEVEL: Optional[AnyStr] = Field("INFO", env="AS_LOG_LEVEL")
     AS_LOG_FILE: Optional[AnyStr] = Field(None, env="AS_LOG_FILE")
 

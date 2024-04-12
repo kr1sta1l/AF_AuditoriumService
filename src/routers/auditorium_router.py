@@ -87,7 +87,8 @@ async def get_building_auditoriums(building_id: int,
     result: BuildingAuditoriumsDto = BuildingAuditoriumsDto(building=building, auditoriums=result_auditorium_list)
     headers = {"auditoriums_amount": str(free_auditoriums_info[1]),
                "entities_amount": str(free_auditoriums_info[2]),
-               "pages_amount": str(free_auditoriums_info[3])}
+               "pages_amount": str(free_auditoriums_info[3]),
+               "Access-Control-Expose-Headers": "*"}
     return JSONResponse(headers=headers, content=result.model_dump(mode='json', by_alias=True),
                         media_type="application/json")
 
@@ -96,7 +97,7 @@ async def get_building_auditoriums(building_id: int,
                                 404: {"description": "User not found", "model": ShortDefaultResponse},
                                 409: {"description": "User not in any auditorium", "model": ShortDefaultResponse}},
             description="Get auditorium where user located in", summary="Get auditorium where user located in")
-async def get_user_auditorium(user_id: int = Header(alias=to_camel("user_id")),
+async def get_user_auditorium(user_id: int = Header(alias=to_camel("userid")),
                               language_code: str = Query("ru", description="Language code",
                                                          alias=to_camel("language_code")),  # ) -> str:  # ,
                               user_repository: GenericRepository = Depends(get_user_repository)) -> UserAuditoriumDto:
@@ -126,6 +127,7 @@ async def get_auditorium_by_id(auditorium_id: int,
                                                           alias=to_camel("language_code"))) -> AuditoriumUsersDto:
     logging.info(auditorium_id)
     auditorium: AuditoriumDto = await hse_api_client.get_auditorium_by_id(auditorium_id, language=language_code)
+    logging.warning(f"AUDITORIUM_INFO {auditorium.id}: {auditorium}")
     if auditorium is None:
         raise HTTPException(status_code=404, detail=f"Auditorium {auditorium_id} not found")
 
@@ -178,7 +180,8 @@ async def get_auditorium_users(auditorium_id: int, page: int = Query(ge=0, defau
     if users_amount % size != 0:
         pages_amount += 1
 
-    headers = {"pages_amount": str(pages_amount), "entities_amount": str(users_amount)}
+    headers = {"pages_amount": str(pages_amount), "entities_amount": str(users_amount),
+               "Access-Control-Expose-Headers": "*"}
     return JSONResponse(headers=headers, content=users_in_auditorium_dto.model_dump(mode='json', by_alias=True))
 
 
@@ -190,7 +193,7 @@ async def get_auditorium_users(auditorium_id: int, page: int = Query(ge=0, defau
              description="Add user to auditorium.",
              summary="Add user to auditorium")
 async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
-                                 user_id: int = Header(alias=to_camel("user_id")),
+                                 user_id: int = Header(alias=to_camel("userid")),
                                  end_of_location: Optional[str] = Query(None,
                                                                         regex=r'^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$',
                                                                         description="End date, format: "
@@ -243,7 +246,7 @@ async def add_user_to_auditorium(user_short_dto: UserAuditoriumShortRequestDto,
                           409: {"description": "User not in auditorium", "model": DefaultResponse},
                           404: {"description": "User/Classroom not found", "model": AuditoriumUserErrorResponse}},
                description="Remove user from auditorium", summary="Remove user from auditorium")
-async def remove_user_from_auditorium(user_id: int = Header(alias=to_camel("user_id")),
+async def remove_user_from_auditorium(user_id: int = Header(alias=to_camel("userid")),
                                       user_repository: GenericRepository = Depends(get_user_repository)
                                       ) -> Any:
     logging.info(user_id)
@@ -254,7 +257,7 @@ async def remove_user_from_auditorium(user_id: int = Header(alias=to_camel("user
                                                                                      status_code=409,
                                                                                      user_not_found=True,
                                                                                      auditorium_not_found=False)
-        return JSONResponse(status_code=404, content=aud_user_response.model_dump(mode='json', by_alias=True))
+        return JSONResponse(status_code=409, content=aud_user_response.model_dump(mode='json', by_alias=True))
 
     auditorium_id = user_dao.auditorium_id
     auditorium: Optional[AuditoriumDto] = await hse_api_client.get_auditorium_by_id(auditorium_id)
